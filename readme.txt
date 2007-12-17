@@ -26,6 +26,12 @@ This plugin provides a small randomly assembled monster avatar for each user bas
 
 Yes, if they're using the standard version (and I didn't mess up anything).
 
+= Can it generate monsters only for people without gravatars? =
+
+Yes. For example with the Gravatar2 plugin you can use code like
+`<?php if (function_exists('gravatar')){ $gravatar_link = gravatar_image_link('', '', '', '', 'Gravatar', '', '', false); if (function_exists("monsterid_build_monster") & strpos($gravatar_link, 'Create your own Gravatar')){ echo monsterid_build_monster($comment->comment_author_IP, $comment->comment_author); }else{echo $gravatar_link;}} ?>`
+Other gravatar plugins will be similar pretty similar.
+
 
 == Screenshots ==
 
