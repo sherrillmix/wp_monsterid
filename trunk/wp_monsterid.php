@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 0.61
+Version: 0.71
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a>.
 Author: Scott Sherrill-Mix
@@ -46,7 +46,7 @@ function monsterid_get_options(){
 	$monsterID_array=get_option('monsterID');
 	if (!isset($monsterID_array['size'])||!isset($monsterID_array['backb'])){
 		//Set Default Values Here
-		$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0);
+		$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0);
 		add_option('monsterID',$default_array,'Options used by MonsterID',false);
 		$monsterID_array=$default_array;
 	}
@@ -78,7 +78,18 @@ function monsterid_subpanel() {
 		}
 		//Not using else on the odd chance some weird input gets sent
 		if ($_POST['legs'] == 0) $monsterID_options['legs']=0;
-		if ($_POST['legs'] == 1) $monsterID_options['legs']=1;
+		elseif ($_POST['legs'] == 1){
+			if(is_writable(WP_MONSTERPARTS_DIR))
+				$monsterID_options['legs']=1;
+			else{
+				echo "<div class='error'>Directory ".WP_MONSTERPARTS_DIR." must be <a href='http://codex.wordpress.org/Changing_File_Permissions'>writeable</a> to use white legs and arms.</div>";
+				$monsterID_options['legs']=0;
+			}
+		}
+		if ($_POST['autoadd'] == 0) $monsterID_options['autoadd']=0;
+		elseif ($_POST['autoadd'] == 1) $monsterID_options['autoadd']=1;
+		if ($_POST['gravatar'] == 0) $monsterID_options['gravatar']=0;
+		elseif ($_POST['gravatar'] == 1) $monsterID_options['gravatar']=1;
 		update_option('monsterID', $monsterID_options);
 		echo "<div class='updated'><p>Options updated (you may need to clear the monster cache to see any effect).</p></div>";
 	}elseif (isset($_POST['clear'])){ //clear the monsterid cache
@@ -107,78 +118,81 @@ function monsterid_subpanel() {
 	//make sure white legs/arms exist
 	$dir=WP_MONSTERPARTS_DIR;
 	$changed="";
-	if ($dh = opendir($dir)&&$monsterID_options['legs']) {
-	while (($file = readdir($dh)) !== false) {
-		if (is_file($dir.$file) and preg_match('/^(arms|legs|body|hair)_.*\.png$/',$file)){
-			if (!file_exists($dir.'w'.$file)){
-				$original=imagecreatefrompng($dir.$file);
-				$x = imagesx($original);
-				$y = imagesy($original);
-				$white=imageColorAllocate($original,230,230,230);
-				for($i=0; $i<$y; $i++) {
-					for($j=0; $j<$x; $j++) {
-						$pos = imagecolorat($original, $j, $i);
-						if ($pos==0) imagesetpixel($original, $j, $i, $white);
+	if ($dh = opendir($dir)&&$monsterID_options['legs']&&is_writable(WP_MONSTERPARTS_DIR)) {
+		while (($file = readdir($dh)) !== false) {
+			if (is_file($dir.$file) and preg_match('/^(arms|legs|body|hair)_.*\.png$/',$file)){
+				if (!file_exists($dir.'w'.$file)){
+					$original=imagecreatefrompng($dir.$file);
+					$x = imagesx($original);
+					$y = imagesy($original);
+					$white=imageColorAllocate($original,230,230,230);
+					for($i=0; $i<$y; $i++) {
+						for($j=0; $j<$x; $j++) {
+							$pos = imagecolorat($original, $j, $i);
+							if ($pos==0) imagesetpixel($original, $j, $i, $white);
+						}
 					}
+					imageSaveAlpha($original,true);
+					imagepng($original,$dir.'w'.$file);
+					$changed.='w'.$file.' ';
 				}
-				imageSaveAlpha($original,true);
-				imagepng($original,$dir.'w'.$file);
-				$changed.='w'.$file.' ';
 			}
 		}
-		}
 		closedir($dh);
-		if ($changed) echo "<div class='updated'><p>White part files: $changed created.</p></div>";
+		if ($changed) echo "<div class='updated'><p>White part files generated: $changed created.</p></div>";
 	}
 	
 	
 
 	?>
-	<div><p><strong>This is the MonsterID options page.</strong></p>
+	<div><h3>This is the MonsterID options page.</h3>
 	<p>You currently have <?php echo $monsterID_count;?> monsters on your website.</p>
 	</div>
 	<div class='wrap'>
 	<p>Set options here:</p>
 	<form method="post" action="options-general.php?page=wp_monsterid.php">
 		<ul style="list-style-type: none">
-	<li><strong>MonsterID Size</strong> in Pixels(Default: 65): <input type="text" name="monstersize" value="<?php echo $monsterID_options['size'];?>"/></li>
+	<li><strong>MonsterID Size</strong> in Pixels (Default: 65):<br /> <input type="text" name="monstersize" value="<?php echo $monsterID_options['size'];?>"/></li>
 	<li><strong>Background Colors</strong> (enter single value or range Default: 220-255,220-255,220-255):<br/>
 	Enter 0-0,0-0,0-0 for transparent background (but note that transparent background may turn grey in IE6):<br/>
 	R:<input type="text" name="backr" value="<?php echo implode($monsterID_options['backr'],'-');?>"/>G:<input type="text" name="backg" value="<?php echo implode($monsterID_options['backg'],'-');?>"/>B:<input type="text" name="backb" value="<?php echo implode($monsterID_options['backb'],'-');?>"/></li>
-	<li><strong>Arm/Leg Color</strong> (change legs and arms to white if on dark background) (default: black) <input type="radio" name="legs" value="0" <?php if (!$monsterID_options['legs']) echo 'checked="checked"';?>> Black <input type="radio" name="legs" value="1" <?php if ($monsterID_options['legs']) echo 'checked="checked"';?>> White (Please make sure the folder wp-content/plugins/monsterid/parts/ is writeable before changing to White)</li>
+	<li><strong>Arm/Leg Color</strong> (change legs and arms to white if on dark background) (default: black)<br /> <input type="radio" name="legs" value="0" <?php if (!$monsterID_options['legs']) echo 'checked="checked"';?>> Black <input type="radio" name="legs" value="1" <?php if ($monsterID_options['legs']) echo 'checked="checked"';?>> White <br />(Please make sure the folder <code>wp-content/plugins/monsterid/parts/</code> is writeable before changing to White)</li>
+	<li><strong>Automatically Add MonsterID to Comments</strong> (adds a MonsterID icon automatically beside commenter names or disable it and edit theme file manually) (default: Auto)<br /> <input type="radio" name="autoadd" value="0" <?php if (!$monsterID_options['autoadd']) echo 'checked="checked"';?>> I'll Do It Myself <input type="radio" name="autoadd" value="1" <?php if ($monsterID_options['autoadd']) echo 'checked="checked"';?>> Add Monsters For Me</li>
+	<li><strong>Gravatar Support</strong> (If a commenter has a gravatar use it, otherwise use MonsterID) (default: MonsterID Only)<br /> <input type="radio" name="gravatar" value="0" <?php if (!$monsterID_options['gravatar']) echo 'checked="checked"';?>> MonsterID Only <input type="radio" name="gravatar" value="1" <?php if ($monsterID_options['gravatar']) echo 'checked="checked"';?>> Gravatar + MonsterID</li>
 	<li><input type="submit" name="submit" value="Set Options"/></li>
 	</ul>
 	</form>
-	</div>
-	<div class='wrap'>
 	<form method="post" action="options-general.php?page=wp_monsterid.php">
 	<ul style="list-style-type: none"><li>Clear the MonsterID Image Cache: <input type="submit" name="clear" value="Clear Cache"/></li></ul>
 	</form>
 	</div>
-	<div><p><strong>To use MonsterID, put:</strong><br/> <code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email,$comment->comment_author); } ?>');?></code><br/> in your comments.php and make sure the folder <code>wp-content/plugins/monsterid</code> is writable.</p> <p>Or if you're more confident and just want the img URL use:
-	<code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email,$comment->comment_author,false); } ?>');?></code></p></div>
-	<div class='wrap'><strong>Testing:</strong><br/>
-	<p>A test monster should be here:<?php echo monsterid_build_monster('This is a test','Test');?> and the source URL for this image is:
-	<a href="<?php echo monsterid_build_monster('This is a test','Test',false);?>"><?php echo monsterid_build_monster('This is a test','Test',false);?></a>.</p>
-
-	<?php if (!is_writable(''.WP_MONSTERID_DIR_INTERNAL)){echo "<div class='error'><p>MonsterID needs ".WP_MONSTERID_DIR_INTERNAL." to be writable.</p></div>";}
+	<div class='wrap'><h4>To use MonsterID:</h3>
+	<p>Make sure sure the folder <code>wp-content/plugins/monsterid</code> is <a href="http://codex.wordpress.org/Changing_File_Permissions">writeable</a>. Monsters should automatically be added beside your commentors names after that. Enjoy.</p>	
+	<?php if (!is_writable(WP_MONSTERID_DIR_INTERNAL)){echo "<div class='error'><p>MonsterID needs ".WP_MONSTERID_DIR_INTERNAL." to be <a href='http://codex.wordpress.org/Changing_File_Permissions'>writable</a>.</p></div>";}
 	 if (!function_exists("gd_info")){echo "<div class='error'><p>GD Image library not found. MonsterID needs this library.</p></div>";}?>
-	</div>
-	<div><p>If there is no monster above or there are any other problems, concerns or suggestions please let me know <a href="http://scott.sherrillmix.com/blog/blogger/wp_monsterid/">here</a>. Enjoy your monsters.</p>
-	<p>The monster generation code and the original images are by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and the underlying idea came from <a href="http://www.docuverse.com/blog/donpark/2007/01/18/visual-security-9-block-ip-identification">Don Park</a>.</p></div>
+	<h4>Testing:</h4>
+	<p>A test monster should be here:<?php echo monsterid_build_monster('This is a test','Test');?> and the source URL for this image is 
+	<a href="<?php echo monsterid_build_monster('This is a test','Test',false);?>">here</a>.</p>
+	<p>If there is no monster above or there are any other problems, concerns or suggestions please let me know <a href="http://scott.sherrillmix.com/blog/blogger/wp_monsterid/">here</a>. Enjoy your monsters.</p></div>
+	<div class="wrap"><h4>For Advanced Users:</h4>
+	<p>If you want more control of where MonsterID's appear change the Automatically Add option above and add:<br /> <code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email, $comment->comment_author); } ?>');?></code><br/> in your comments.php. Or if you're more confident and just want the img URL use:<br />
+	<code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email, $comment->comment_author,false); } ?>');?></code></p></div>
+
+
+	<div><p>The monster generation code and the original images are by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and the underlying idea came from <a href="http://www.docuverse.com/blog/donpark/2007/01/18/visual-security-9-block-ip-identification">Don Park</a>.</p></div>
 	</div>
 	<?php	
 }
 
 
 function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$write=true){
-	if (function_exists("gd_info")){
+	if (function_exists("gd_info")&&is_writable(WP_MONSTERID_DIR_INTERNAL)){
 		// init random seed
 		$id=substr(sha1($seed),0,8);
 		//use admin email as salt. should be safe
 		$filename=substr(sha1($id.substr(get_option('admin_email'),0,5)),0,15).'.png';
+		$monsterID_options=monsterid_get_options();	
 		if (!file_exists(WP_MONSTERID_DIR_INTERNAL.$filename)){
-			$monsterID_options=monsterid_get_options();	
 			//check if transparent
 			if (array_sum($monsterID_options['backr'])+array_sum($monsterID_options['backg'])+array_sum($monsterID_options['backb'])>0) $transparent=false;
 			else $transparent=true;
@@ -207,9 +221,11 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 			if(!$monster) return false;//something went wrong but don't want to mess up blog layout
 			//pick body color
 			$lightness=0;
-			while($lightness<0.15||$lightness>.95){
+			$count=0;
+			while($lightness<0.15||$lightness>.95&&$count<5){
 				$rgb_color=array($twister->rand(0,255),$twister->rand(0,255),$twister->rand(0,255));
 				$lightness=(max($rgb_color)+min($rgb_color))/2/255;
+				$count++;
 			}
 			$body = imagecolorallocate($monster, $rgb_color[0], $rgb_color[1], $rgb_color[2]); 
 			if (!$transparent){
@@ -252,17 +268,28 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 			imagedestroy($out);
 		}
 		$filename=get_option('siteurl').'/'.WP_MONSTERID_DIR.$filename;
+		if($monsterID_options['gravatar'])
+        $filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
 		if ($img){
 			$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon"/>';
 		}
 		return $filename;
 	} else { //php GD image manipulation is required
-		return false; //php GD image isn't installed but don't want to mess up blog layout
+		return false; //php GD image isn't installed or file isn't writeable but don't want to mess up blog layout
 	}
 }
 
+function monsterid_comment_author($output){
+	global $comment;
+	$monsterid_options=monsterid_get_options();
+	if(!is_admin() && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
+	return $output;
+}
+
+
 //Hooks
 add_action('admin_menu', 'monsterid_menu');
+add_filter('get_comment_author','monsterid_comment_author');
 
 
 class mid_mersenne_twister{
