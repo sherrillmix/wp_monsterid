@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 0.71
+Version: 1.01
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a>.
 Author: Scott Sherrill-Mix
@@ -282,7 +282,7 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 function monsterid_comment_author($output){
 	global $comment;
 	$monsterid_options=monsterid_get_options();
-	if(!is_admin() && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
+	if((is_page () || is_single ()) && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
 	return $output;
 }
 
