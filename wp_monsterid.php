@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 1.01
+Version: 1.02
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a>.
 Author: Scott Sherrill-Mix
@@ -156,9 +156,9 @@ function monsterid_subpanel() {
 	<li><strong>Background Colors</strong> (enter single value or range Default: 220-255,220-255,220-255):<br/>
 	Enter 0-0,0-0,0-0 for transparent background (but note that transparent background may turn grey in IE6):<br/>
 	R:<input type="text" name="backr" value="<?php echo implode($monsterID_options['backr'],'-');?>"/>G:<input type="text" name="backg" value="<?php echo implode($monsterID_options['backg'],'-');?>"/>B:<input type="text" name="backb" value="<?php echo implode($monsterID_options['backb'],'-');?>"/></li>
-	<li><strong>Arm/Leg Color</strong> (change legs and arms to white if on dark background) (default: black)<br /> <input type="radio" name="legs" value="0" <?php if (!$monsterID_options['legs']) echo 'checked="checked"';?>> Black <input type="radio" name="legs" value="1" <?php if ($monsterID_options['legs']) echo 'checked="checked"';?>> White <br />(Please make sure the folder <code>wp-content/plugins/monsterid/parts/</code> is writeable before changing to White)</li>
-	<li><strong>Automatically Add MonsterID to Comments</strong> (adds a MonsterID icon automatically beside commenter names or disable it and edit theme file manually) (default: Auto)<br /> <input type="radio" name="autoadd" value="0" <?php if (!$monsterID_options['autoadd']) echo 'checked="checked"';?>> I'll Do It Myself <input type="radio" name="autoadd" value="1" <?php if ($monsterID_options['autoadd']) echo 'checked="checked"';?>> Add Monsters For Me</li>
-	<li><strong>Gravatar Support</strong> (If a commenter has a gravatar use it, otherwise use MonsterID) (default: MonsterID Only)<br /> <input type="radio" name="gravatar" value="0" <?php if (!$monsterID_options['gravatar']) echo 'checked="checked"';?>> MonsterID Only <input type="radio" name="gravatar" value="1" <?php if ($monsterID_options['gravatar']) echo 'checked="checked"';?>> Gravatar + MonsterID</li>
+	<li><strong>Arm/Leg Color</strong> (change legs and arms to white if on dark background) (default: black)<br /> <input type="radio" name="legs" value="0" <?php if (!$monsterID_options['legs']) echo 'checked="checked"';?>/> Black <input type="radio" name="legs" value="1" <?php if ($monsterID_options['legs']) echo 'checked="checked"';?>/> White <br />(Please make sure the folder <code>wp-content/plugins/monsterid/parts/</code> is writeable before changing to White)</li>
+	<li><strong>Automatically Add MonsterID to Comments</strong> (adds a MonsterID icon automatically beside commenter names or disable it and edit theme file manually) (default: Auto)<br /> <input type="radio" name="autoadd" value="0" <?php if (!$monsterID_options['autoadd']) echo 'checked="checked"';?>/> I'll Do It Myself <input type="radio" name="autoadd" value="1" <?php if ($monsterID_options['autoadd']) echo 'checked="checked"';?>/> Add Monsters For Me</li>
+	<li><strong>Gravatar Support</strong> (If a commenter has a gravatar use it, otherwise use MonsterID) (default: MonsterID Only)<br /> <input type="radio" name="gravatar" value="0" <?php if (!$monsterID_options['gravatar']) echo 'checked="checked"';?>/> MonsterID Only <input type="radio" name="gravatar" value="1" <?php if ($monsterID_options['gravatar']) echo 'checked="checked"';?>/> Gravatar + MonsterID</li>
 	<li><input type="submit" name="submit" value="Set Options"/></li>
 	</ul>
 	</form>
@@ -166,7 +166,7 @@ function monsterid_subpanel() {
 	<ul style="list-style-type: none"><li>Clear the MonsterID Image Cache: <input type="submit" name="clear" value="Clear Cache"/></li></ul>
 	</form>
 	</div>
-	<div class='wrap'><h4>To use MonsterID:</h3>
+	<div class='wrap'><h4>To use MonsterID:</h4>
 	<p>Make sure sure the folder <code>wp-content/plugins/monsterid</code> is <a href="http://codex.wordpress.org/Changing_File_Permissions">writeable</a>. Monsters should automatically be added beside your commentors names after that. Enjoy.</p>	
 	<?php if (!is_writable(WP_MONSTERID_DIR_INTERNAL)){echo "<div class='error'><p>MonsterID needs ".WP_MONSTERID_DIR_INTERNAL." to be <a href='http://codex.wordpress.org/Changing_File_Permissions'>writable</a>.</p></div>";}
 	 if (!function_exists("gd_info")){echo "<div class='error'><p>GD Image library not found. MonsterID needs this library.</p></div>";}?>
@@ -192,6 +192,7 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 		//use admin email as salt. should be safe
 		$filename=substr(sha1($id.substr(get_option('admin_email'),0,5)),0,15).'.png';
 		$monsterID_options=monsterid_get_options();	
+		if ($size=='') $size=$monsterID_options['size'];
 		if (!file_exists(WP_MONSTERID_DIR_INTERNAL.$filename)){
 			//check if transparent
 			if (array_sum($monsterID_options['backr'])+array_sum($monsterID_options['backg'])+array_sum($monsterID_options['backb'])>0) $transparent=false;
@@ -201,9 +202,6 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 			if ($monsterID_options['legs']==1) $parts_array=array('wlegs' => array(),'whair' => array(),'warms' => array(),'wbody' => array(),'eyes' => array(),'mouth' => array());
 			else $parts_array=array('legs' => array(),'hair' => array(),'arms' => array(),'body' => array(),'eyes' => array(),'mouth' => array());
 			$parts_order=array_keys($parts_array);
-			if ($size==''){
-				$size=$monsterID_options['size'];
-			}
 			//get possible parts files
 			$parts_array=monsterid_findparts($parts_array);
 			//$partsarray=array('wlegs' => array(),'whair' => array(),'warms' => array(),'wbody' => array(),'eyes' => array(),'mouth' => array());
@@ -269,9 +267,9 @@ function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$wri
 		}
 		$filename=get_option('siteurl').'/'.WP_MONSTERID_DIR.$filename;
 		if($monsterID_options['gravatar'])
-        $filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
+        $filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;size=$size&amp;default=$filename";
 		if ($img){
-			$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon"/>';
+			$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon" height="'.$size.'" width="'.$size.'"/>';
 		}
 		return $filename;
 	} else { //php GD image manipulation is required
