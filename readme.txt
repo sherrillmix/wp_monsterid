@@ -4,13 +4,13 @@ Donate link: http://scott.sherrillmix.com/blog/
 Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
 Tested up to: 2.3.1
-Stable tag: 1.02
+Stable tag: 2.0
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
 
 == Description ==
 
-This plugin provides a small randomly assembled monster avatar for each user based on their email address. Think gravatar only without requiring any external site and with monsters. Now with monsters consistent across servers. Based on idea and images by [Andreas Gohr](http://www.splitbrain.org/blog/2007-01/20_monsterid_as_gravatar_fallback). See the plugin website if you need any help or for an example of the plugin in action.
+This plugin provides a small randomly assembled monster avatar for each user based on their email address. Think gravatar only without requiring any external site and with monsters. Now with monsters consistent across servers. Based on idea and images by [Andreas Gohr](http://www.splitbrain.org/blog/2007-01/20_monsterid_as_gravatar_fallback) and artwork by [Lemm](http://rocketworm.com/). See the plugin website if you need any help or for an example of the plugin in action.
 
 == Installation ==
 
@@ -35,3 +35,4 @@ Yes. Just turn on the Gravatar option in the MonsterID options.
 
 1. An example of WP_MonsterID in action.
 
+2. An example of artistic (available in WP 2.0+) WP_MonsterID in action.
