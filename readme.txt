@@ -35,4 +35,4 @@ Yes. Just turn on the Gravatar option in the MonsterID options.
 
 1. An example of WP_MonsterID in action.
 
-2. An example of artistic (available in WP 2.0+) WP_MonsterID in action.
+2. An example of artistic (available in WP_MonsterID 2.0+) WP_MonsterID in action.
