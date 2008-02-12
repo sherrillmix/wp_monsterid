@@ -4,7 +4,7 @@ Donate link: http://scott.sherrillmix.com/blog/
 Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
 Tested up to: 2.3.1
-Stable tag: 2.0
+Stable tag: 2.01
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
 
@@ -33,6 +33,6 @@ Yes. Just turn on the Gravatar option in the MonsterID options.
 
 == Screenshots ==
 
-1. An example of WP_MonsterID in action.
+1. Example of WP_MonsterIDs.
 
-2. An example of artistic (available in WP_MonsterID 2.0+) WP_MonsterID in action.
+2. Example of artistic (available in WP_MonsterID 2.0+) WP_MonsterIDs.

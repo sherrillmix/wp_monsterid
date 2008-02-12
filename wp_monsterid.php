@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.0
+Version: 2.01
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -58,7 +58,7 @@ class monsterid{
 			$monsterID_array=get_option('monsterID');
 			if (!isset($monsterID_array['size'])||!isset($monsterID_array['backb'])){
 				//Set Default Values Here
-				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1);
+				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1,'nonpostsize'=>0);
 				add_option('monsterID',$default_array,'Options used by MonsterID',false);
 				$monsterID_array=$default_array;
 			}
@@ -175,7 +175,7 @@ class monsterid{
 			if($monsterID_options['gravatar'])
 					$filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
 			if ($img){
-				$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon"/>';
+				$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon" height="'.$size.'" width="'.$size.'"/>';
 			}
 			return $filename;
 		} else { //php GD image manipulation is required
@@ -274,10 +274,16 @@ function monsterid_subpanel() {
 	if (isset($_POST['submit'])) { //update the monster size option
 		$monsterID_options=$monsterid->get_options();
 		$monstersize=intval($_POST['monstersize']);
+		$nonpostsize=intval($_POST['nonpostsize']);
 		if ($monstersize > 0 & $monstersize < 400){
 			$monsterID_options['size']=$monstersize;
 		}else{
 			echo "<div class='error'><p>Please enter an integer for size. Preferably between 30-200.</p></div>";		
+		}
+		if ($nonpostsize > 0 & $nonpostsize < 400){
+			$monsterID_options['nonpostsize']=$nonpostsize;
+		}else{
+			echo "<div class='error'><p>Please enter an integer for size. Preferably between 10-100.</p></div>";		
 		}
 		foreach(array('backr','backg','backb') as $color){//update background color options
 			$colorarray=explode('-',$_POST[$color]);
@@ -370,6 +376,7 @@ function monsterid_subpanel() {
 	<form method="post" action="options-general.php?page=wp_monsterid.php">
 		<ul style="list-style-type: none">
 	<li><strong>MonsterID Size</strong> in Pixels (Default: 65):<br /> <input type="text" name="monstersize" value="<?php echo $monsterID_options['size'];?>"/></li>
+	<li><strong>MonsterID Size on Non-Posts</strong> (e.g. Front page Recent Comment Widget) in Pixels (0 for none, Default: 0):<br /> <input type="text" name="nonpostsize" value="<?php echo $monsterID_options['nonpostsize'] ? $monsterID_options['nonpostsize'] : 0;?>"/></li>
 	<li><strong>Background Colors</strong> (enter single value or range Default: 220-255,220-255,220-255):<br/>
 	Enter 0-0,0-0,0-0 for transparent background (but note that transparent background may turn grey in IE6):<br/>
 	R:<input type="text" name="backr" value="<?php echo implode($monsterID_options['backr'],'-');?>"/>G:<input type="text" name="backg" value="<?php echo implode($monsterID_options['backg'],'-');?>"/>B:<input type="text" name="backb" value="<?php echo implode($monsterID_options['backb'],'-');?>"/></li>
@@ -418,10 +425,14 @@ function monsterid_comment_author($output){
 	global $comment;
 	global $monsterid;
 	$monsterid_options=$monsterid->get_options();
-	if((is_page () || is_single ()) && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
+	if($monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback"){
+		if(is_page () || is_single ())
+			$output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 	
+		elseif($monsterid_options['nonpostsize'])
+			$output='<img class="smallmonsterid monsterid" src="'.monsterid_build_monster($comment->comment_author_email,$comment->comment_author,FALSE).'" alt="MonsterID" width="'.$monsterid_options['nonpostsize'].'" height="'.$monsterid_options['nonpostsize'].'" /> '.$output;
+	}
 	return $output;
 }
-
 
 
 //Hooks
