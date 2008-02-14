@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.02
+Version: 2.03
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -58,7 +58,7 @@ class monsterid{
 			$monsterID_array=get_option('monsterID');
 			if (!isset($monsterID_array['size'])||!isset($monsterID_array['backb'])){
 				//Set Default Values Here
-				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1,'nonpostsize'=>0);
+				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1);
 				add_option('monsterID',$default_array,'Options used by MonsterID',false);
 				$monsterID_array=$default_array;
 			}
@@ -67,7 +67,7 @@ class monsterid{
 		return $this->monsterid_options;
 	}
 
-	function build_monster($seed='',$altImgText='',$img=true,$size='',$write=true){
+	function build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize){
 		if (function_exists("gd_info")&&is_writable(WP_MONSTERID_DIR_INTERNAL)){
 			// init random seed
 			$id=substr(sha1($seed),0,8);
@@ -75,6 +75,7 @@ class monsterid{
 			$filename=substr(sha1($id.substr(get_option('admin_email'),0,5)),0,15).'.png';
 			$monsterID_options=$this->get_options();	
 			if ($size=='') $size=$monsterID_options['size'];
+			if($displaySize=='') $displaySize=$size;
 			if (!file_exists(WP_MONSTERID_DIR_INTERNAL.$filename)){
 				if(!isset($this->startTime))$this->startTime=time();
 				#make sure nobody waits more than 5 seconds
@@ -175,7 +176,7 @@ class monsterid{
 			if($monsterID_options['gravatar'])
 					$filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
 			if ($img){
-				$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon" height="'.$size.'" width="'.$size.'"/>';
+				$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon" height="'.$displaySize.'" width="'.$displaySize.'"/>';
 			}
 			return $filename;
 		} else { //php GD image manipulation is required
@@ -263,6 +264,7 @@ class monsterid{
 }
 
 #Create a monsterid for later use
+global $monsterid;
 $monsterid=new monsterid();
 
 
@@ -274,16 +276,10 @@ function monsterid_subpanel() {
 	if (isset($_POST['submit'])) { //update the monster size option
 		$monsterID_options=$monsterid->get_options();
 		$monstersize=intval($_POST['monstersize']);
-		$nonpostsize=intval($_POST['nonpostsize']);
 		if ($monstersize > 0 & $monstersize < 400){
 			$monsterID_options['size']=$monstersize;
 		}else{
 			echo "<div class='error'><p>Please enter an integer for size. Preferably between 30-200.</p></div>";		
-		}
-		if ($nonpostsize > 0 & $nonpostsize < 400){
-			$monsterID_options['nonpostsize']=$nonpostsize;
-		}else{
-			echo "<div class='error'><p>Please enter an integer for size. Preferably between 10-100.</p></div>";		
 		}
 		foreach(array('backr','backg','backb') as $color){//update background color options
 			$colorarray=explode('-',$_POST[$color]);
@@ -376,7 +372,6 @@ function monsterid_subpanel() {
 	<form method="post" action="options-general.php?page=wp_monsterid.php">
 		<ul style="list-style-type: none">
 	<li><strong>MonsterID Size</strong> in Pixels (Default: 65):<br /> <input type="text" name="monstersize" value="<?php echo $monsterID_options['size'];?>"/></li>
-	<li><strong>MonsterID Size on Non-Posts</strong> (e.g. Front page Recent Comment Widget) in Pixels (0 for none, Default: 0):<br /> <input type="text" name="nonpostsize" value="<?php echo $monsterID_options['nonpostsize'] ? $monsterID_options['nonpostsize'] : 0;?>"/></li>
 	<li><strong>Background Colors</strong> (enter single value or range Default: 220-255,220-255,220-255):<br/>
 	Enter 0-0,0-0,0-0 for transparent background (but note that transparent background may turn grey in IE6):<br/>
 	R:<input type="text" name="backr" value="<?php echo implode($monsterID_options['backr'],'-');?>"/>G:<input type="text" name="backg" value="<?php echo implode($monsterID_options['backg'],'-');?>"/>B:<input type="text" name="backb" value="<?php echo implode($monsterID_options['backb'],'-');?>"/></li>
@@ -395,7 +390,8 @@ function monsterid_subpanel() {
 	</form>
 	</div>
 	<div class='wrap'><h4>To use MonsterID:</h3>
-	<p>Make sure sure the folder <code>wp-content/plugins/monsterid</code> is <a href="http://codex.wordpress.org/Changing_File_Permissions">writeable</a>. Monsters should automatically be added beside your commentors names after that. Enjoy.</p>	
+	<p>Make sure sure the folder <code>wp-content/plugins/monsterid</code> is <a href="http://codex.wordpress.org/Changing_File_Permissions">writeable</a>. Monsters should automatically be added beside your commentors names after that. Enjoy.</p>
+	<p>If you use the Recent Comments Widget in your sidebar, this plugin also provides a replacement Recent Comments (with MonsterIDs) Widget to add MonsterIDs to the sidebar comments (just set it in the Widgets Control Panel)</p>
 	<?php if (!is_writable(WP_MONSTERID_DIR_INTERNAL)){echo "<div class='error'><p>MonsterID needs ".WP_MONSTERID_DIR_INTERNAL." to be <a href='http://codex.wordpress.org/Changing_File_Permissions'>writable</a>.</p></div>";}
 	 if (!function_exists("gd_info")){echo "<div class='error'><p>GD Image library not found. MonsterID needs this library.</p></div>";}?>
 	<h4>Testing:</h4>
@@ -413,26 +409,23 @@ function monsterid_subpanel() {
 }
 
 
-function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$write=true){
+function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize=''){
 	global $monsterid;
 	if (!isset($monsterid))$monsterid=new monsterid();
 	if(isset($monsterid)){
-		return $monsterid->build_monster($seed,$altImgText,$img,$size,$write);
+		return $monsterid->build_monster($seed,$altImgText,$img,$size,$write,$displaySize);
 	}else return false;
 }
 
 function monsterid_comment_author($output){
 	global $comment;
 	global $monsterid;
+	if(!isset($monsterid)) return $output;
 	$monsterid_options=$monsterid->get_options();
-	if($monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback"){
-		if(is_page () || is_single ())
-			$output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 	
-		elseif($monsterid_options['nonpostsize']&!is_admin())
-			$output='<img class="smallmonsterid monsterid" src="'.monsterid_build_monster($comment->comment_author_email,$comment->comment_author,FALSE).'" alt="MonsterID" width="'.$monsterid_options['nonpostsize'].'" height="'.$monsterid_options['nonpostsize'].'" /> '.$output;
-	}
+	if((is_page () || is_single ()) && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
 	return $output;
 }
+
 
 
 //Hooks
@@ -495,5 +488,93 @@ class mid_mersenne_twister{
 	}
 }
 
+//Widget stuff 
+//Wordpress's default widget doesn't get commenter email so we can't use it for monsterids
+//Copying their widget with some search and replace with monsterid
+function monsterid_recent_comments($args) {
+	global $wpdb, $comments, $comment, $monsterid;
+	extract($args, EXTR_SKIP);
+	$options = get_option('widget_monsterid_recent_comments');
+	$title = empty($options['title']) ? __('Recent Comments') : $options['title'];
+	if ( !$number = (int) $options['number'] )
+		$number = 5;
+	else if ( $number < 1 )
+		$number = 1;
+	else if ( $number > 15 )
+		$number = 15;
+	if ( !$size = (int) $options['monsterid_size'] )
+		$size = 30;
+	else if ( $size < 5 )
+		$size=5;
+	else if($size > 80)
+		$size=80;
+	if ( !$comments = wp_cache_get( 'monsterid_recent_comments', 'widget' ) ) {
+		$comments = $wpdb->get_results("SELECT comment_author, comment_author_url, comment_ID, comment_post_ID, comment_author_email, comment_type FROM $wpdb->comments WHERE comment_approved = '1' ORDER BY comment_date_gmt DESC LIMIT $number");
+		wp_cache_add( 'monsterid_recent_comments', $comments, 'widget' );
+	}
+?>
 
+		<?php echo $before_widget; ?>
+			<?php echo $before_title . $title . $after_title; ?>
+			<ul id="monsterid_recentcomments"><?php
+			if ( $comments ) : foreach ($comments as $comment) :
+				echo  '<li class="recentcomments">';
+				if($comment->comment_type!="pingback"&&$comment->comment_type!="trackback")
+					echo monsterid_build_monster($comment->comment_author_email,$comment->comment_author,TRUE,'',TRUE,$size);
+				echo sprintf(__('%1$s on %2$s'), get_comment_author_link(), '<a href="'. get_permalink($comment->comment_post_ID) . '#comment-' . $comment->comment_ID . '">' . get_the_title($comment->comment_post_ID) . '</a>') . '</li>';
+			endforeach; endif;?></ul>
+		<?php echo $after_widget; ?>
+<?php
+}
+
+function wp_delete_monsterid_recent_comments_cache() {
+	wp_cache_delete( 'monsterid_recent_comments', 'widget' );
+}
+
+function monsterid_recent_comments_control() {
+	$options = $newoptions = get_option('widget_monsterid_recent_comments');
+	if ( $_POST["monsterid_recent-comments-submit"] ) {
+		$newoptions['title'] = strip_tags(stripslashes($_POST["monsterid_recent-comments-title"]));
+		$newoptions['number'] = (int) $_POST["monsterid_recent-comments-number"];
+		$newoptions['monsterid_size'] = (int) $_POST["monsterid_size"];
+	}
+	if ( $options != $newoptions ) {
+		$options = $newoptions;
+		update_option('widget_monsterid_recent_comments', $options);
+		wp_delete_monsterid_recent_comments_cache();
+	}
+	$title = attribute_escape($options['title']);
+	if ( !$number = (int) $options['number'] )
+		$number = 5;
+	if ( !$size = (int) $options['monsterid_size'] )
+		$size = 30;
+?>
+			<p><label for="monsterid_recent-comments-title"><?php _e('Title:'); ?> <input style="width: 250px;" id="monsterid_recent-comments-title" name="monsterid_recent-comments-title" type="text" value="<?php echo $title; ?>" /></label></p>
+			<p><label for="monsterid_recent-comments-number"><?php _e('Number of comments to show:'); ?> <input style="width: 25px; text-align: center;" id="monsterid_recent-comments-number" name="monsterid_recent-comments-number" type="text" value="<?php echo $number; ?>" /></label> <?php _e('(at most 15)'); ?></p>
+			<p><label for="monsterid_size"><?php _e('Size of Widget MonsterIDs (pixels):'); ?> <input style="width: 25px; text-align: center;" id="monsterid_size" name="monsterid_size" type="text" value="<?php echo $size; ?>" /></label></p>
+			<input type="hidden" id="monsterid_recent-comments-submit" name="monsterid_recent-comments-submit" value="1" />
+<?php
+}
+
+function monsterid_recent_comments_style() {
+?>
+<style type="text/css">
+	ul#monsterid_recentcomments{list-style:none;}
+	ul#monsterid_recentcomments img.monsterid{vertical-align:middle;}
+	ul#monsterid_recentcomments li.recentcomments:before{content:"";} 
+	.recentcomments a{display:inline !important;padding: 0 !important;margin: 0 !important;}
+</style>
+<?php
+}
+
+function monsterid_recent_comments_widget_init(){
+	register_sidebar_widget('Recent Comments (with MonsterIDs)', 'monsterid_recent_comments');
+	register_widget_control('Recent Comments (with MonsterIDs)', 'monsterid_recent_comments_control', 320, 90);
+	if ( is_active_widget('monsterid_recent_comments') )
+		add_action('wp_head', 'monsterid_recent_comments_style');
+	add_action( 'comment_post', 'wp_delete_monsterid_recent_comments_cache' );
+	add_action( 'wp_set_comment_status', 'wp_delete_monsterid_recent_comments_cache' );
+}
+
+add_action('widgets_init', 'monsterid_recent_comments_widget_init');
 ?>
