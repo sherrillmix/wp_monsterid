@@ -172,7 +172,7 @@ class monsterid{
 				}
 				imagedestroy($out);
 			}
-			$filename=get_option('siteurl').'/'.WP_MONSTERID_DIR.$filename;
+			$filename=get_option('siteurl').WP_MONSTERID_DIR.$filename;
 			if($monsterID_options['gravatar'])
 					$filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
 			if ($img){
