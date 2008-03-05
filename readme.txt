@@ -4,7 +4,7 @@ Donate link: http://scott.sherrillmix.com/blog/
 Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
 Tested up to: 2.3.3
-Stable tag: 2.04
+Stable tag: 2.1
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
 
@@ -17,6 +17,7 @@ This plugin provides a small randomly assembled monster avatar for each user bas
 1. Unzip `wp_monsterid.zip`. 
 1. Upload `wp_monsterid.php` and the `monsterid` folder to `wp-content/plugins`. 
 1. Make sure the `monsterid` folder is [writable](http://codex.wordpress.org/Changing_File_Permissions). 
+1. Activate the plugin in the Plugins Admin page.
 1. Monsters should now appear beside commenters' names. Enjoy. (Advanced users can edit their theme file if they want further control).
 1. You can add CSS for `img.monsterid` in your theme's style.css to adjust the appearance of the images or adjust the size in the MonsterID control panel (your old monsters won't be deleted until you clear the cache). You can also turn on Gravatar support or clear the MonsterID image cache in the Control Panel.
 

@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.04
+Version: 2.1
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -14,6 +14,17 @@ define('WP_MONSTERID_DIR', str_replace('\\','/',preg_replace('@.*([\\\\/]wp-cont
 define('WP_MONSTERID_DIR_INTERNAL', dirname(__FILE__).'/monsterid/');
 define('WP_MONSTERPARTS_DIR', WP_MONSTERID_DIR_INTERNAL.'parts/');
 define('WP_MONSTERID_MAXWAIT', 5);
+define('DEFAULT_MONSTERID_RECENTCOMMENTS_CSS',
+'ul#monsterid_recentcomments{list-style:none;}
+ul#monsterid_recentcomments img.monsterid{float:left;margin: 0 3px 0 0;}
+ul#monsterid_recentcomments{overflow:auto;}
+li#recent-comments-with-monsterids ul#monsterid_recentcomments li{clear:left;padding-bottom:5px;}
+ul#monsterid_recentcomments li.recentcomments:before{content:"";} 
+.recentcomments a{display:inline !important;padding: 0 !important;margin: 0 !important;}'
+);
+define('DEFAULT_MONSTERID_CSS',
+'img.monsterid{float:left;margin: 1px;}'
+);
 
 function monsterid_menu() {
 	if (function_exists('add_options_page')) {
@@ -25,6 +36,8 @@ class monsterid{
 	var $sameColorParts = array('arms_S8.png','legs_S5.png','legs_S13.png','mouth_S5.png','mouth_S4.png');
 	var $specificColorParts = array('hair_S4.png'=>array(.6,.75),'arms_S2.png'=>array(-.05,.05),'hair_S6.png'=>array(-.05,.05),'mouth_9.png'=>array(-.05,.05),'mouth_6.png'=>array(-.05,.05),'mouth_S2.png'=>array(-.05,.05));
 	var $randomColorParts = array('arms_3.png','arms_4.png','arms_5.png','arms_S1.png','arms_S3.png','arms_S5.png','arms_S6.png','arms_S7.png','arms_S9.png','hair_S1.png','hair_S2.png','hair_S3.png','hair_S5.png','legs_1.png','legs_2.png','legs_3.png','legs_5.png','legs_S1.png','legs_S2.png','legs_S3.png','legs_S4.png','legs_S6.png','legs_S7.png','legs_S10.png','legs_S12.png','mouth_3.png','mouth_4.png','mouth_7.png','mouth_10.png','mouth_S6.png');
+	//Generated from find_parts_dimensions
+	var $partOptimization=array('legs_1.png' => array(array(17,99),array(58,119)), 'legs_2.png' => array(array(25,94),array(54,119)), 'legs_3.png' => array(array(34,99),array(48,117)), 'legs_4.png' => array(array(999999,0),array(999999,0)), 'legs_5.png' => array(array(28,91),array(64,119)), 'legs_S1.png' => array(array(17,105),array(53,118)), 'legs_S10.png' => array(array(42,88),array(54,118)), 'legs_S11.png' => array(array(999999,0),array(999999,0)), 'legs_S12.png' => array(array(15,107),array(60,115)), 'legs_S13.png' => array(array(8,106),array(69,119)), 'legs_S2.png' => array(array(23,99),array(56,117)), 'legs_S3.png' => array(array(30,114),array(53,118)), 'legs_S4.png' => array(array(12,100),array(50,116)), 'legs_S5.png' => array(array(17,109),array(63,118)), 'legs_S6.png' => array(array(10,100),array(56,119)), 'legs_S7.png' => array(array(33,78),array(73,114)), 'legs_S8.png' => array(array(33,95),array(102,116)), 'legs_S9.png' => array(array(42,75),array(72,116)), 'hair_1.png' => array(array(999999,0),array(999999,0)), 'hair_2.png' => array(array(999999,0),array(999999,0)), 'hair_3.png' => array(array(999999,0),array(999999,0)), 'hair_4.png' => array(array(34,84),array(0,41)), 'hair_5.png' => array(array(999999,0),array(999999,0)), 'hair_S1.png' => array(array(25,96),array(2,58)), 'hair_S2.png' => array(array(45,86),array(3,51)), 'hair_S3.png' => array(array(15,105),array(4,48)), 'hair_S4.png' => array(array(15,102),array(1,51)), 'hair_S5.png' => array(array(16,95),array(4,65)), 'hair_S6.png' => array(array(28,88),array(1,48)), 'hair_S7.png' => array(array(51,67),array(6,49)), 'arms_1.png' => array(array(999999,0),array(999999,0)), 'arms_2.png' => array(array(999999,0),array(999999,0)), 'arms_3.png' => array(array(2,119),array(20,72)), 'arms_4.png' => array(array(2,115),array(14,98)), 'arms_5.png' => array(array(5,119),array(17,90)), 'arms_S1.png' => array(array(0,117),array(23,109)), 'arms_S2.png' => array(array(2,118),array(8,75)), 'arms_S3.png' => array(array(2,116),array(17,93)), 'arms_S4.png' => array(array(999999,0),array(999999,0)), 'arms_S5.png' => array(array(1,115),array(6,40)), 'arms_S6.png' => array(array(3,117),array(7,90)), 'arms_S7.png' => array(array(1,116),array(21,67)), 'arms_S8.png' => array(array(2,119),array(18,98)), 'arms_S9.png' => array(array(8,110),array(18,65)), 'body_1.png' => array(array(22,99),array(17,90)), 'body_10.png' => array(array(37,85),array(22,98)), 'body_11.png' => array(array(23,108),array(10,106)), 'body_12.png' => array(array(9,113),array(6,112)), 'body_13.png' => array(array(29,98),array(26,97)), 'body_14.png' => array(array(31,93),array(25,94)), 'body_15.png' => array(array(23,100),array(20,97)), 'body_2.png' => array(array(14,104),array(16,89)), 'body_3.png' => array(array(22,102),array(22,93)), 'body_4.png' => array(array(18,107),array(22,103)), 'body_5.png' => array(array(22,101),array(12,99)), 'body_6.png' => array(array(24,103),array(10,92)), 'body_7.png' => array(array(22,99),array(7,92)), 'body_8.png' => array(array(21,103),array(12,95)), 'body_9.png' => array(array(20,99),array(9,91)), 'body_S1.png' => array(array(22,102),array(25,96)), 'body_S2.png' => array(array(35,94),array(17,96)), 'body_S3.png' => array(array(30,100),array(20,102)), 'body_S4.png' => array(array(26,104),array(14,92)), 'body_S5.png' => array(array(26,100),array(16,97)), 'eyes_1.png' => array(array(43,76),array(31,48)), 'eyes_10.png' => array(array(40,80),array(32,50)), 'eyes_11.png' => array(array(41,82),array(31,54)), 'eyes_12.png' => array(array(45,78),array(30,50)), 'eyes_13.png' => array(array(10,111),array(10,34)), 'eyes_14.png' => array(array(40,79),array(21,56)), 'eyes_15.png' => array(array(49,72),array(38,43)), 'eyes_2.png' => array(array(37,72),array(36,53)), 'eyes_3.png' => array(array(47,75),array(31,53)), 'eyes_4.png' => array(array(999999,0),array(999999,0)), 'eyes_5.png' => array(array(44,77),array(43,52)), 'eyes_6.png' => array(array(43,57),array(35,49)), 'eyes_7.png' => array(array(62,76),array(35,49)), 'eyes_8.png' => array(array(45,72),array(23,51)), 'eyes_9.png' => array(array(999999,0),array(999999,0)), 'eyes_S1.png' => array(array(41,82),array(29,52)), 'eyes_S2.png' => array(array(999999,0),array(999999,0)), 'eyes_S3.png' => array(array(34,88),array(39,52)), 'eyes_S4.png' => array(array(47,74),array(39,51)), 'eyes_S5.png' => array(array(41,76),array(36,51)), 'mouth_1.png' => array(array(999999,0),array(999999,0)), 'mouth_10.png' => array(array(40,84),array(56,89)), 'mouth_2.png' => array(array(57,65),array(56,61)), 'mouth_3.png' => array(array(38,85),array(54,72)), 'mouth_4.png' => array(array(44,77),array(56,81)), 'mouth_5.png' => array(array(53,72),array(59,76)), 'mouth_6.png' => array(array(48,74),array(56,77)), 'mouth_7.png' => array(array(51,70),array(57,80)), 'mouth_8.png' => array(array(44,81),array(64,78)), 'mouth_9.png' => array(array(49,75),array(52,103)), 'mouth_S1.png' => array(array(47,82),array(57,73)), 'mouth_S2.png' => array(array(45,71),array(65,84)), 'mouth_S3.png' => array(array(48,77),array(56,86)), 'mouth_S4.png' => array(array(46,77),array(56,73)), 'mouth_S5.png' => array(array(55,69),array(55,98)), 'mouth_S6.png' => array(array(40,79),array(56,72)), 'mouth_S7.png' => array(array(999999,0),array(999999,0)));
 	var $startTime;
 	var $monsterid_options;
 	function monsterid(){
@@ -58,13 +71,49 @@ class monsterid{
 			$monsterID_array=get_option('monsterID');
 			if (!isset($monsterID_array['size'])||!isset($monsterID_array['backb'])){
 				//Set Default Values Here
-				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1);
+				$default_array=array('size'=>65,'backr'=>array(220,255),'backg'=>array(220,255),'backb'=>array(220,255),'legs'=>0,'autoadd'=>1,'gravatar'=>0,'artistic'=>0,'greyscale'=>1,'css'=>DEFAULT_MONSTERID_CSS);
 				add_option('monsterID',$default_array,'Options used by MonsterID',false);
 				$monsterID_array=$default_array;
 			}
 			$this->monsterid_options=$monsterID_array;
 		}
 		return $this->monsterid_options;
+	}
+
+	function find_parts_dimensions($text=false){
+		$parts_array=array('legs' => array(),'hair' => array(),'arms' => array(),'body' => array(),'eyes' => array(),'mouth' => array());
+		$parts=$this->findparts($parts_array);
+		$bounds=array();
+		foreach($parts as $key => $value){
+			foreach($value as $part){
+				$file=WP_MONSTERPARTS_DIR.$part;
+				$im=imagecreatefrompng($file);
+				$imgw = imagesx($im);
+				$imgh = imagesy($im);
+				$xbounds=array(999999,0);
+				$ybounds=array(999999,0);
+				for($i=0;$i<$imgw;$i++){
+					for($j=0;$j<$imgh;$j++){
+						$rgb=ImageColorAt($im, $i, $j);
+						$r = ($rgb >> 16) & 0xFF;
+						$g = ($rgb >> 8) & 0xFF;
+						$b = $rgb & 0xFF;
+						$alpha = ($rgb & 0x7F000000) >> 24;
+						$lightness=($r+$g+$b)/3/255;
+						if($lightness>.1&&$lightness<.99&&$alpha<115){
+							$xbounds[0]=min($xbounds[0],$i);
+							$xbounds[1]=max($xbounds[1],$i);
+							$ybounds[0]=min($ybounds[0],$j);
+							$ybounds[1]=max($ybounds[1],$j);
+						}
+					}
+				}
+				$text.="'$part' => array(array(${xbounds[0]},${xbounds[1]}),array(${ybounds[0]},${ybounds[1]})), ";
+				$bounds[$part]=array($xbounds,$ybounds);
+			}
+		}
+		if($text) return $text;
+		else return $bounds;
 	}
 
 	function build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize){
@@ -82,7 +131,7 @@ class monsterid{
 				if(time()-$this->startTime>WP_MONSTERID_MAXWAIT){
 					$user=wp_get_current_user();
 					#Let it go longer if the user is an admin
-					if($user->user_level < 8||time()-$this->startTime>20) return false;
+					if($user->user_level < 8||time()-$this->startTime>14) return false;
 				}
 
 				//check if transparent
@@ -121,7 +170,7 @@ class monsterid{
 
 				// add parts
 				foreach($parts_order as $part){
-					$file=$parts_array[$part];	
+					$file=$parts_array[$part];
 					$file=WP_MONSTERPARTS_DIR.$file;
 					$im = @imagecreatefrompng($file);
 					if(!$im) return false; //something went wrong but don't want to mess up blog layout
@@ -133,15 +182,15 @@ class monsterid{
 						}
 						if($part == 'body'||$part == 'wbody'){
 							//imagefill($monster,60,60,$body);
-							$this->image_colorize($im,$hue,$saturation);
+							$this->image_colorize($im,$hue,$saturation,$parts_array[$part]);
 						}elseif(in_array($parts_array[$part],$this->sameColorParts)){
-							$this->image_colorize($im,$hue,$saturation);
+							$this->image_colorize($im,$hue,$saturation,$parts_array[$part]);
 						}elseif(in_array($parts_array[$part],$this->randomColorParts)){
-							$this->image_colorize($im,$twister->extractNumber(),$twister->rand(25000,100000)/100000);
+							$this->image_colorize($im,$twister->extractNumber(),$twister->rand(25000,100000)/100000,$parts_array[$part]);
 						}elseif(array_key_exists($parts_array[$part],$this->specificColorParts)){
 							$low=$this->specificColorParts[$parts_array[$part]][0]*10000;
 							$high=$this->specificColorParts[$parts_array[$part]][1]*10000;
-							$this->image_colorize($im,$twister->rand($low,$high)/10000,$twister->rand(25000,100000)/100000);
+							$this->image_colorize($im,$twister->rand($low,$high)/10000,$twister->rand(25000,100000)/100000,$parts_array[$part]);
 						}
 					}else{
 						if($part == 'oldbody'||$part == 'woldbody'){
@@ -184,17 +233,43 @@ class monsterid{
 		}
 	}
 
-	function image_colorize(&$im,$hue=1,$saturation=1){
+	function image_colorize(&$im,$hue=1,$saturation=1,$part=''){
 		$imgw = imagesx($im);
 		$imgh = imagesy($im);
+		/*//DOESN'T PRESERVE ALPHA SO DOESN'T WORK
+		imagetruecolortopalette($im,true,1000);
+		$numColors=imagecolorstotal($im);
+		for($i=0;$i<$numColors;$i++){
+			$color=imagecolorsforindex($im,$i);
+			$lightness=($color['red']+$color['green']+$color['blue'])/3/255;
+			var_dump($color);
+			if($color['alpha']!=0){
+				var_dump("|||||||||||||||||||||||");
+			}
+			if($lightness>.1&&$lightness<.99&&$color['alpha']<115){
+				$newrgb=$this->HSL2hex(array($hue,$saturation,$lightness));
+				imagecolorset ($im, $i, $newrgb[0],$newrgb[1],$newrgb[2]);
+			}
+		}*/
 		imagealphablending($im,FALSE);
-		for($i=0;$i<$imgw;$i++){
-			for($j=0;$j<$imgh;$j++){
+		if($optimize=$this->partOptimization[$part]){
+			$xmin=$optimize[0][0];
+			$xmax=$optimize[0][1];
+			$ymin=$optimize[1][0];
+			$ymax=$optimize[1][1];
+		}else{
+			$xmin=0;
+			$xmax=$imgw-1;
+			$ymin=0;
+			$ymax=$imgh-1;
+		}
+		for($i=$xmin;$i<=$xmax;$i++){
+			for($j=$ymin;$j<=$ymax;$j++){
 				$rgb=ImageColorAt($im, $i, $j);
 				$r = ($rgb >> 16) & 0xFF;
 				$g = ($rgb >> 8) & 0xFF;
 				$b = $rgb & 0xFF;
-				$alpha = ($rgb & 0x7F000000) >> 24;###DOES THIS WORK?
+				$alpha = ($rgb & 0x7F000000) >> 24;
 				$lightness=($r+$g+$b)/3/255;
 				if($lightness>.1&&$lightness<.99&&$alpha<115){
 					$newrgb=$this->HSL2hex(array($hue,$saturation,$lightness));
@@ -269,7 +344,6 @@ $monsterid=new monsterid();
 
 
 
-
 function monsterid_subpanel() {
 	global $monsterid;
 	echo "<div class='wrap'>";
@@ -325,6 +399,14 @@ function monsterid_subpanel() {
 			closedir($dh);
 			echo "<div class='updated'><p>Cache cleared.</p></div>";		
 		}
+	}elseif(isset($_POST['cssreset'])){//reset monsterid css to default
+		$monsterID_options=$monsterid->get_options();
+		$monsterID_options['css']=DEFAULT_MONSTERID_CSS;
+		update_option('monsterID', $monsterID_options);
+	}elseif(isset($_POST['csssubmit'])){
+		$monsterID_options=$monsterid->get_options();
+		$monsterID_options['css']=$_POST['monsterid_css'];
+		update_option('monsterID', $monsterID_options);
 	}
 	$monsterID_options=$monsterid->get_options(TRUE);
 	//count file
@@ -400,7 +482,14 @@ function monsterid_subpanel() {
 	<p>If there is no monster above or there are any other problems, concerns or suggestions please let me know <a href="http://scott.sherrillmix.com/blog/blogger/wp_monsterid/">here</a>. Enjoy your monsters.</p></div>
 	<div class="wrap"><h4>For Advanced Users:</h4>
 	<p>If you want more control of where MonsterID's appear change the Automatically Add option above and add:<br /> <code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email, $comment->comment_author); } ?>');?></code><br/> in your comments.php. Or if you're more confident and just want the img URL use:<br />
-	<code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email, $comment->comment_author,false); } ?>');?></code></p></div>
+	<code><?php echo htmlspecialchars('<?php if (function_exists("monsterid_build_monster")) {echo monsterid_build_monster($comment->comment_author_email, $comment->comment_author,false); } ?>');?></code></p>
+	<p>You can also add any custom css you would like here:</p>
+	<form method="post" action="options-general.php?page=wp_monsterid.php">
+	<ul style="list-style-type: none">
+	<li><textarea name="monsterid_css" rows="5" cols="70"><?php echo $monsterID_options['css'];?></textarea></li>
+	<li><input type="submit" name="csssubmit" value="Adjust CSS"/><input type="submit" name="cssreset" value="Return to Default"/></li></ul>
+	</form>
+	</div>
 
 
 	<div><p>The monster generation code and the original images are by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a>, the updated artistic images came from <a href=" http://rocketworm.com/">Lemm</a> and the underlying idea came from <a href="http://www.docuverse.com/blog/donpark/2007/01/18/visual-security-9-block-ip-identification">Don Park</a>.</p></div>
@@ -426,11 +515,22 @@ function monsterid_comment_author($output){
 	return $output;
 }
 
-
+function monsterid_style() {
+	global $monsterid;
+	$options = $monsterid->get_options();
+	if($css = $options['css']){
+?>
+<style type="text/css">
+<?php echo $css; ?>
+</style>
+<?php
+	}
+}
 
 //Hooks
 add_action('admin_menu', 'monsterid_menu');
 add_filter('get_comment_author','monsterid_comment_author');
+add_action('wp_head', 'monsterid_style');
 
 
 class mid_mersenne_twister{
@@ -537,7 +637,10 @@ function monsterid_recent_comments_control() {
 		$newoptions['title'] = strip_tags(stripslashes($_POST["monsterid_recent-comments-title"]));
 		$newoptions['number'] = (int) $_POST["monsterid_recent-comments-number"];
 		$newoptions['monsterid_size'] = (int) $_POST["monsterid_size"];
+		$newoptions['monsterid_css'] =  $_POST["monsterid_css"];
 	}
+	if($_POST["monsterid_css_reset"])
+		$newoptions['monsterid_css'] = DEFAULT_MONSTERID_RECENTCOMMENTS_CSS;
 	if ( $options != $newoptions ) {
 		$options = $newoptions;
 		update_option('widget_monsterid_recent_comments', $options);
@@ -547,29 +650,33 @@ function monsterid_recent_comments_control() {
 	if ( !$number = (int) $options['number'] )
 		$number = 5;
 	if ( !$size = (int) $options['monsterid_size'] )
-		$size = 30;
+		$size = 25;
+	if(!$css = stripslashes($options['monsterid_css']))
+		$css = DEFAULT_MONSTERID_RECENTCOMMENTS_CSS;
 ?>
 			<p><label for="monsterid_recent-comments-title"><?php _e('Title:'); ?> <input style="width: 250px;" id="monsterid_recent-comments-title" name="monsterid_recent-comments-title" type="text" value="<?php echo $title; ?>" /></label></p>
 			<p><label for="monsterid_recent-comments-number"><?php _e('Number of comments to show:'); ?> <input style="width: 25px; text-align: center;" id="monsterid_recent-comments-number" name="monsterid_recent-comments-number" type="text" value="<?php echo $number; ?>" /></label> <?php _e('(at most 15)'); ?></p>
 			<p><label for="monsterid_size"><?php _e('Size of Widget MonsterIDs (pixels):'); ?> <input style="width: 25px; text-align: center;" id="monsterid_size" name="monsterid_size" type="text" value="<?php echo $size; ?>" /></label></p>
+			<p><label for="monsterid_css"><?php _e('CSS for Widget:'); ?><textarea id="monsterid_css" name="monsterid_css" rows="3" cols="55" /><?php echo $css;?></textarea></label></p>
+			<p><label for="monsterid_css_reset"><?php _e('Reset CSS to Default:'); ?> <input id="monsterid_css_reset" name="monsterid_css_reset" type="submit" value="Reset CSS" /></label></p>
 			<input type="hidden" id="monsterid_recent-comments-submit" name="monsterid_recent-comments-submit" value="1" />
 <?php
 }
 
 function monsterid_recent_comments_style() {
+	$options = get_option('widget_monsterid_recent_comments');
+	if(!$css = stripslashes($options['monsterid_css']))
+		$css = DEFAULT_MONSTERID_RECENTCOMMENTS_CSS;
 ?>
 <style type="text/css">
-	ul#monsterid_recentcomments{list-style:none;}
-	ul#monsterid_recentcomments img.monsterid{vertical-align:middle;}
-	ul#monsterid_recentcomments li.recentcomments:before{content:"";} 
-	.recentcomments a{display:inline !important;padding: 0 !important;margin: 0 !important;}
+<?php echo $css; ?>
 </style>
 <?php
 }
 
 function monsterid_recent_comments_widget_init(){
 	register_sidebar_widget('Recent Comments (with MonsterIDs)', 'monsterid_recent_comments');
-	register_widget_control('Recent Comments (with MonsterIDs)', 'monsterid_recent_comments_control', 320, 90);
+	register_widget_control('Recent Comments (with MonsterIDs)', 'monsterid_recent_comments_control', 400, 250);
 	if ( is_active_widget('monsterid_recent_comments') )
 		add_action('wp_head', 'monsterid_recent_comments_style');
 	add_action( 'comment_post', 'wp_delete_monsterid_recent_comments_cache' );
@@ -577,4 +684,5 @@ function monsterid_recent_comments_widget_init(){
 }
 
 add_action('widgets_init', 'monsterid_recent_comments_widget_init');
+
 ?>
