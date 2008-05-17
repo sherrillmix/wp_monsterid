@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.1
+Version: 2.11
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -116,7 +116,7 @@ class monsterid{
 		else return $bounds;
 	}
 
-	function build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize){
+	function build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize='',$gravataron=true){
 		if (function_exists("gd_info")&&is_writable(WP_MONSTERID_DIR_INTERNAL)){
 			// init random seed
 			$id=substr(sha1($seed),0,8);
@@ -213,7 +213,7 @@ class monsterid{
 				imagedestroy($monster);
 
 				if ($write){
-						$wrote=imagepng($out,WP_MONSTERID_DIR_INTERNAL.$filename);
+						$wrote=@imagepng($out,WP_MONSTERID_DIR_INTERNAL.$filename);
 						if(!$wrote) return false; //something went wrong but don't want to mess up blog layout
 				}else{
 					header ("Content-type: image/png");
@@ -222,7 +222,7 @@ class monsterid{
 				imagedestroy($out);
 			}
 			$filename=get_option('siteurl').WP_MONSTERID_DIR.$filename;
-			if($monsterID_options['gravatar'])
+			if($monsterID_options['gravatar']&&$gravataron)
 					$filename = "http://www.gravatar.com/avatar.php?gravatar_id=".md5($seed)."&amp;&;size=$size&amp;default=$filename";
 			if ($img){
 				$filename='<img class="monsterid" src="'.$filename.'" alt="'.str_replace('"',"'",$altImgText).' MonsterID Icon" height="'.$displaySize.'" width="'.$displaySize.'"/>';
@@ -380,6 +380,7 @@ function monsterid_subpanel() {
 		}
 		if ($_POST['autoadd'] == 0) $monsterID_options['autoadd']=0;
 		elseif ($_POST['autoadd'] == 1) $monsterID_options['autoadd']=1;
+		elseif ($_POST['autoadd'] == 2) $monsterID_options['autoadd']=2;
 		if ($_POST['gravatar'] == 0) $monsterID_options['gravatar']=0;
 		elseif ($_POST['gravatar'] == 1) $monsterID_options['gravatar']=1;
 		if ($_POST['artistic'] == 0) $monsterID_options['artistic']=0;
@@ -458,7 +459,7 @@ function monsterid_subpanel() {
 	Enter 0-0,0-0,0-0 for transparent background (but note that transparent background may turn grey in IE6):<br/>
 	R:<input type="text" name="backr" value="<?php echo implode($monsterID_options['backr'],'-');?>"/>G:<input type="text" name="backg" value="<?php echo implode($monsterID_options['backg'],'-');?>"/>B:<input type="text" name="backb" value="<?php echo implode($monsterID_options['backb'],'-');?>"/></li>
 	<li><strong>Arm/Leg Color</strong> (change legs and arms to white if on dark background) (default: black)<br /> <input type="radio" name="legs" value="0" <?php if (!$monsterID_options['legs']) echo 'checked="checked"';?>> Black <input type="radio" name="legs" value="1" <?php if ($monsterID_options['legs']) echo 'checked="checked"';?>> White <br />(Please make sure the folder <code>wp-content/plugins/monsterid/parts/</code> is writeable before changing to White)</li>
-	<li><strong>Automatically Add MonsterID to Comments</strong> (adds a MonsterID icon automatically beside commenter names or disable it and edit theme file manually) (default: Auto)<br /> <input type="radio" name="autoadd" value="0" <?php if (!$monsterID_options['autoadd']) echo 'checked="checked"';?>> I'll Do It Myself <input type="radio" name="autoadd" value="1" <?php if ($monsterID_options['autoadd']) echo 'checked="checked"';?>> Add Monsters For Me</li>
+	<li><strong>Automatically Add MonsterID to Comments</strong> (adds a MonsterID icon automatically beside commenter names or disable it and edit theme file manually) (default: Auto)<br /> <input type="radio" name="autoadd" value="0" <?php if (!$monsterID_options['autoadd']) echo 'checked="checked"';?>> I'll Do It Myself <input type="radio" name="autoadd" value="1" <?php if ($monsterID_options['autoadd']==1) echo 'checked="checked"';?>> Add Monsters For Me <input type="radio" name="autoadd" value="2" <?php if ($monsterID_options['autoadd']==2) echo 'checked="checked"';?>/> My Theme Has Builtin WP2.5+ Avatars</li></li>
 	<li><strong>Gravatar Support</strong> (If a commenter has a gravatar use it, otherwise use MonsterID) (default: MonsterID Only)<br /> <input type="radio" name="gravatar" value="0" <?php if (!$monsterID_options['gravatar']) echo 'checked="checked"';?>> MonsterID Only <input type="radio" name="gravatar" value="1" <?php if ($monsterID_options['gravatar']) echo 'checked="checked"';?>> Gravatar + MonsterID</li>
 	<li><strong>Artistic Monsters</strong> (Artistic monsters require more processing) (default: Artistic)<br /> <input type="radio" name="artistic" value="1" <?php if ($monsterID_options['artistic']) echo 'checked="checked"';?>> Artistic <input type="radio" name="artistic" value="0" <?php if (!$monsterID_options['artistic']) echo 'checked="checked"';?>> Original</li>
 	<?php if($monsterID_options['artistic']){?>
@@ -498,11 +499,11 @@ function monsterid_subpanel() {
 }
 
 
-function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize=''){
+function monsterid_build_monster($seed='',$altImgText='',$img=true,$size='',$write=true,$displaySize='',$gravataron=true){
 	global $monsterid;
 	if (!isset($monsterid))$monsterid=new monsterid();
 	if(isset($monsterid)){
-		return $monsterid->build_monster($seed,$altImgText,$img,$size,$write,$displaySize);
+		return $monsterid->build_monster($seed,$altImgText,$img,$size,$write,$displaySize,$gravataron);
 	}else return false;
 }
 
@@ -511,9 +512,51 @@ function monsterid_comment_author($output){
 	global $monsterid;
 	if(!isset($monsterid)) return $output;
 	$monsterid_options=$monsterid->get_options();
-	if((is_page () || is_single ()) && $monsterid_options['autoadd'] && $comment->comment_type!="pingback"&&$comment->comment_type!="trackback") $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
+	if((is_page () || is_single ()) && $monsterid_options['autoadd']==1 && $comment->comment_type!="pingback" && $comment->comment_type!="trackback" &&  isset($comment->comment_karma)) //assuming sidebar widgets won't check comment karma (and single page comments will))
+	  $output=monsterid_build_monster($comment->comment_author_email,$comment->comment_author).' '.$output; 
 	return $output;
 }
+
+function monsterid_get_avatar($avatar, $id_or_email, $size, $default){
+	global $monsterid;
+	if(!isset($monsterid)) return $avatar;
+	$email = '';
+	if ( is_numeric($id_or_email) ) {
+		$id = (int) $id_or_email;
+		$user = get_userdata($id);
+		if ( $user )
+			$email = $user->user_email;
+	} elseif ( is_object($id_or_email) ) {
+		if ( !empty($id_or_email->user_id) ) {
+			$id = (int) $id_or_email->user_id;
+			$user = get_userdata($id);
+			if ( $user)
+				$email = $user->user_email;
+		} elseif ( !empty($id_or_email->comment_author_email) ) {
+			$email = $id_or_email->comment_author_email;
+		}
+	} else {
+		$email = $id_or_email;
+	}
+
+	if(!$avatar) return monsterid_build($email,'','',true,$size);
+	if(!$monsterid->monsterid_options['gravatar']){
+		$monsteridurl=monsterid_build($email,'',false);
+		$newavatar=preg_replace('@src=(["\'])http://[^"\']+["\']@','src=\1'.$monsteridurl.'\1',$avatar);
+		$avatar=$newavatar;
+	}elseif($monsterid->monsterid_options['gravatar']==1){
+		$monsteridurl=monsterid_build($email,'',false,'',true,true,$size,false);
+		if(strpos($avatar,'default=http://')!==false){
+			$newavatar=preg_replace('@default=http://[^&\'"]+([&\'"])@','default='.urlencode($monsteridurl).'\1',$avatar);
+		}else{
+			$newavatar=preg_replace('@(src=(["\'])http://[^?]+\?)@','\1default='.urlencode($monsteridurl).'&amp;',$avatar);
+		}
+		$avatar=$newavatar;
+	}
+	return($avatar);
+}
+
+
 
 function monsterid_style() {
 	global $monsterid;
@@ -531,7 +574,9 @@ function monsterid_style() {
 add_action('admin_menu', 'monsterid_menu');
 add_filter('get_comment_author','monsterid_comment_author');
 add_action('wp_head', 'monsterid_style');
-
+if($wp_version>=2.5&&$monsterid->monsterid_options['autoadd']==2){
+	add_filter('get_avatar','monsterid_get_avatar',5,4);
+}
 
 class mid_mersenne_twister{
 //Copied from wikipedia pseudocode
