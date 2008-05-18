@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.11
+Version: 2.12
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -41,7 +41,8 @@ class monsterid{
 	var $startTime;
 	var $monsterid_options;
 	function monsterid(){
-		//nothing for now
+		//get the options
+		$this->monsterid_options=$this->get_options();
 	}
 
 	function findparts($partsarray){
@@ -541,11 +542,11 @@ function monsterid_get_avatar($avatar, $id_or_email, $size, $default){
 
 	if(!$avatar) return monsterid_build($email,'','',true,$size);
 	if(!$monsterid->monsterid_options['gravatar']){
-		$monsteridurl=monsterid_build($email,'',false);
+		$monsteridurl=monsterid_build_monster($email,'',false);
 		$newavatar=preg_replace('@src=(["\'])http://[^"\']+["\']@','src=\1'.$monsteridurl.'\1',$avatar);
 		$avatar=$newavatar;
 	}elseif($monsterid->monsterid_options['gravatar']==1){
-		$monsteridurl=monsterid_build($email,'',false,'',true,true,$size,false);
+		$monsteridurl=monsterid_build_monster($email,'',false,'',true,$size,false);
 		if(strpos($avatar,'default=http://')!==false){
 			$newavatar=preg_replace('@default=http://[^&\'"]+([&\'"])@','default='.urlencode($monsteridurl).'\1',$avatar);
 		}else{
