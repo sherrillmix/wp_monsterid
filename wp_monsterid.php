@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP_MonsterID
-Version: 2.12
+Version: 3.0
 Plugin URI: http://scott.sherrillmix.com/blog/blogger/WP_MonsterID
 Description: This plugin generates email specific monster icons for each user based on code and images by <a href="http://www.splitbrain.org/projects/monsterid">Andreas Gohr</a> and images by <a href=" http://rocketworm.com/">Lemm</a>.
 Author: Scott Sherrill-Mix
@@ -156,11 +156,12 @@ class monsterid{
 					$parts_array[$part]=$parts_array[$part][$twister->array_rand($parts_array[$part])];
 				}
 
+
 				// create backgound
 				$file=WP_MONSTERPARTS_DIR.'back.png';
 				$monster =  @imagecreatefrompng($file);
 				if(!$monster) return false;//something went wrong but don't want to mess up blog layout
-				$hue=$twister->extractNumber();
+				$hue=$twister->real_halfopen();
 				$saturation=$twister->rand(25000,100000)/100000;
 				//Pick a back color even if transparent to preserve random draws across servers		
 				$back = imagecolorallocate($monster, $twister->rand($monsterID_options['backr'][0],$monsterID_options['backr'][1]), $twister->rand($monsterID_options['backg'][0],$monsterID_options['backg'][1]), $twister->rand($monsterID_options['backb'][0],$monsterID_options['backb'][1]));
@@ -187,7 +188,7 @@ class monsterid{
 						}elseif(in_array($parts_array[$part],$this->sameColorParts)){
 							$this->image_colorize($im,$hue,$saturation,$parts_array[$part]);
 						}elseif(in_array($parts_array[$part],$this->randomColorParts)){
-							$this->image_colorize($im,$twister->extractNumber(),$twister->rand(25000,100000)/100000,$parts_array[$part]);
+							$this->image_colorize($im,$twister->real_halfopen(),$twister->rand(25000,100000)/100000,$parts_array[$part]);
 						}elseif(array_key_exists($parts_array[$part],$this->specificColorParts)){
 							$low=$this->specificColorParts[$parts_array[$part]][0]*10000;
 							$high=$this->specificColorParts[$parts_array[$part]][1]*10000;
@@ -580,59 +581,219 @@ if($wp_version>=2.5&&$monsterid->monsterid_options['autoadd']==2){
 }
 
 class mid_mersenne_twister{
-//Copied from wikipedia pseudocode
-//Don't call over 600 times (without recalling the constructor)
-// Create a length 624 array to store the state of the generator
- var $MT;
- var $i;
- // Initialise the generator from a seed
- function mid_mersenne_twister ($seed=123456) {
-     $this->MT[0] = $seed;
-		 $this->i=1;
-     for ($i=1;$i<624;$i++) { // loop over each other element
-         $this->MT[$i] = $this->mysql_math('(1812433253 * ('.$this->MT[$i-1].' ^ ('.$this->MT[$i-1]." >> 30)) + $i) & 0xffffffff");
-     }
-		 $this->generateNumbers();
- }
+	//MySQL version doesn't work since they shut down integer overflow switching to:
+	//https://github.com/ruafozy/php-mersenne-twister/blob/master/src/mersenne_twister.php
 
-	//(some) PHP integers don't have enough bits for Mersenne Twister so use mysql
-	function mysql_math($equation){
-		global $wpdb;
-		$query="SELECT ".$equation;
-		$answer=$wpdb->get_var($query);
-		return $answer;
+	function mid_mersenne_twister($seed=123456) {
+		$this->bits32 = PHP_INT_MAX == 2147483647;
+		$this->define_constants();
+		$this->init_with_integer($seed);
 	}
 
- // Generate an array of 624 untempered numbers
- function generateNumbers() {
-     for ($i=0;$i<624;$i++) {
-         $y = $this->mysql_math('('.$this->MT[$i].' & 0x7fffffff) + ('.$this->MT[($i+1)%624].' & 0xfffffffe)');
-				 $even=$this->mysql_math($y.' ^ 0x00000001');
-         if ($even) {
-             $this->MT[$i] = $this->mysql_math($this->MT[($i + 397) % 624]." ^ ($y >> 1)");
-         } else {
-             $this->MT[$i] = $this->mysql_math($this->MT[($i + 397) % 624]." ^ ($y >>1) ^ (2567483615)"); // 0x9908b0df
-         }
-     }
- }
- 
- // Extract a tempered pseudorandom number based on the i-th value
- // generateNumbers() will have to be called again once the array of 624 numbers is exhausted
- function extractNumber() {
-     $y = $this->MT[$this->i];
-     $y = $this->mysql_math("$y ^ ($y >>11) ^ (($y << 7) & 2636928640) ^ (($y << 15) & 4022730752) ^ ($y >>18)");
-		 $this->i++;
-     return $y/0xffffffff;
- }
+	function define_constants() {
+		$this->N = 624;
+		$this->M = 397;
+		$this->MATRIX_A = 0x9908b0df;
+		$this->UPPER_MASK = 0x80000000;
+		$this->LOWER_MASK = 0x7fffffff;
+
+		$this->MASK10=~((~0) << 10); 
+		$this->MASK11=~((~0) << 11); 
+		$this->MASK12=~((~0) << 12); 
+		$this->MASK14=~((~0) << 14); 
+		$this->MASK20=~((~0) << 20); 
+		$this->MASK21=~((~0) << 21); 
+		$this->MASK22=~((~0) << 22); 
+		$this->MASK26=~((~0) << 26); 
+		$this->MASK27=~((~0) << 27); 
+		$this->MASK31=~((~0) << 31); 
+
+		$this->TWO_TO_THE_16=pow(2,16);
+		$this->TWO_TO_THE_31=pow(2,31);
+		$this->TWO_TO_THE_32=pow(2,32);
+
+		$this->MASK32 = $this->MASK31 | ($this->MASK31 << 1);
+	}
+
+	function init_with_integer($integer_seed) {
+		$integer_seed = $this->force_32_bit_int($integer_seed);
+
+		$mt = &$this->mt;
+		$mti = &$this->mti;
+
+		$mt = array_fill(0, $this->N, 0);
+
+		$mt[0] = $integer_seed;
+
+		for($mti = 1; $mti < $this->N; $mti++) {
+			$mt[$mti] = $this->add_2($this->mul(1812433253,
+				($mt[$mti - 1] ^ (($mt[$mti - 1] >> 30) & 3))), $mti);
+		/*
+		mt[mti] =
+			 (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti);
+		 */
+		}
+	}
+
+	/* generates a random number on [0,1)-real-interval */
+	function real_halfopen() {
+		return
+			$this->signed2unsigned($this->int32()) * (1.0 / 4294967296.0);
+	}
+	function int32() {
+		$mag01 = array(0, $this->MATRIX_A);
+
+		$mt = &$this->mt;
+		$mti = &$this->mti;
+
+		if ($mti >= $this->N) { /* generate N words all at once */
+			for ($kk=0;$kk<$this->N-$this->M;$kk++) {
+				$y = ($mt[$kk]&$this->UPPER_MASK)|($mt[$kk+1]&$this->LOWER_MASK);
+				$mt[$kk] = $mt[$kk+$this->M] ^ (($y >> 1) & $this->MASK31) ^ $mag01[$y & 1];
+			}
+			for (;$kk<$this->N-1;$kk++) {
+				$y = ($mt[$kk]&$this->UPPER_MASK)|($mt[$kk+1]&$this->LOWER_MASK);
+				$mt[$kk] =
+					$mt[$kk+($this->M-$this->N)] ^ (($y >> 1) & $this->MASK31) ^ $mag01[$y & 1];
+			}
+			$y = ($mt[$this->N-1]&$this->UPPER_MASK)|($mt[0]&$this->LOWER_MASK);
+			$mt[$this->N-1] = $mt[$this->M-1] ^ (($y >> 1) & $this->MASK31) ^ $mag01[$y & 1];
+
+			$mti = 0;
+		}
+
+		$y = $mt[$mti++];
+
+		/* Tempering */
+		$y ^= ($y >> 11) & $this->MASK21;
+		$y ^= ($y << 7) & ((0x9d2c << 16) | 0x5680);
+		$y ^= ($y << 15) & (0xefc6 << 16);
+		$y ^= ($y >> 18) & $this->MASK14;
+
+		return $y;
+	}
+
+	function signed2unsigned($signed_integer) {
+		## assert(is_integer($signed_integer));
+		## assert(($signed_integer & ~$this->MASK32) === 0);
+
+		return $signed_integer >= 0? $signed_integer:
+			$this->TWO_TO_THE_32 + $signed_integer;
+	}
+
+	function unsigned2signed($unsigned_integer) {
+		## assert($unsigned_integer >= 0);
+		## assert($unsigned_integer < pow(2, 32));
+		## assert(floor($unsigned_integer) === floatval($unsigned_integer));
+
+		return intval($unsigned_integer < $this->TWO_TO_THE_31? $unsigned_integer:
+			$unsigned_integer - $this->TWO_TO_THE_32);
+	}
+
+	function force_32_bit_int($x) {
+  /*
+	 it would be un-PHP-like to require is_integer($x),
+	 so we have to handle cases like this:
+
+		$x === pow(2, 31)
+		$x === strval(pow(2, 31))
+
+	 we are also opting to do something sensible (rather than dying)
+	 if the seed is outside the range of a 32-bit unsigned integer.
+	*/
+
+		if(is_integer($x)) {
+	 /* 
+		we mask in case we are on a 64-bit machine and at least one
+		bit is set between position 32 and position 63.
+	  */
+			return $x & $this->MASK32;
+		} else {
+			$x = floatval($x);
+
+			$x = $x < 0? ceil($x): floor($x);
+
+			$x = fmod($x, $this->TWO_TO_THE_32);
+
+			if($x < 0)
+				$x += $this->TWO_TO_THE_32;
+
+			return $this->unsigned2signed($x);
+		}
+	}
+
+  /*
+	takes 2 integers, treats them as unsigned 32-bit integers,
+	and adds them.
+
+	it works by splitting each integer into
+	2 "half-integers", then adding the high and low half-integers
+	separately.
+
+	a slight complication is that the sum of the low half-integers
+	may not fit into 16 bits; any "overspill" is added to the sum
+	of the high half-integers.
+	*/ 
+	function add_2($n1, $n2) {
+		$x = ($n1 & 0xffff) + ($n2 & 0xffff);
+
+		return 
+			(((($n1 >> 16) & 0xffff) + 
+			(($n2 >> 16) & 0xffff) + 
+			($x >> 16)) << 16) | ($x & 0xffff);
+	}
+
+	function mul($a, $b) {
+  /*
+	 a and b, considered as unsigned integers, can be expressed as follows:
+
+		a = 2**16 * a1 + a2,
+
+		b = 2**16 * b1 + b2,
+
+		where
+
+	0 <= a2 < 2**16,
+	0 <= b2 < 2**16.
+
+	 given those 2 equations, what this function essentially does is to
+	 use the following identity:
+
+		a * b = 2**32 * a1 * b1 + 2**16 * a1 * b2 + 2**16 * b1 * a2 + a2 * b2
+
+	 note that the first term, i.e. 2**32 * a1 * b1, is unnecessary here,
+	 so we don't compute it.
+
+	 we could make the following code clearer by using intermediate
+	 variables, but that would probably hurt performance.
+	*/
+
+		return
+			$this->unsigned2signed(
+				fmod(
+					$this->TWO_TO_THE_16 *
+	  /*
+		 the next line of code calculates a1 * b2,
+		 the line after that calculates b1 * a2, 
+		 and the line after that calculates a2 * b2.
+		*/
+					((($a >> 16) & 0xffff) * ($b & 0xffff) +
+					(($b >> 16) & 0xffff) * ($a & 0xffff)) +
+					($a & 0xffff) * ($b & 0xffff),
+
+					$this->TWO_TO_THE_32));
+	}
 
 	function rand($low,$high){
-		$pick=floor($low+($high-$low+1)*$this->extractNumber());
+		$pick=floor($low+($high-$low+1)*$this->real_halfopen());
 		return ($pick);
 	}
+
 	function array_rand($array){
 		return($this->rand(0,count($array)-1));
 	}
 }
+
 
 //Widget stuff 
 //Wordpress's default widget doesn't get commenter email so we can't use it for monsterids

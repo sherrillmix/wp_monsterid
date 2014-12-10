@@ -3,8 +3,8 @@ Contributors: scottsm
 Donate link: http://scott.sherrillmix.com/blog/
 Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
-Tested up to: 2.5.1
-Stable tag: 2.12
+Tested up to: 4.0.1
+Stable tag: 3.0
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
 
