@@ -5,6 +5,7 @@ Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
 Tested up to: 4.0.1
 Stable tag: 3.0
+License: GPLv2 or later
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
 
