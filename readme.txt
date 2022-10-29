@@ -3,8 +3,8 @@ Contributors: scottsm
 Donate link: http://scott.sherrillmix.com/blog/
 Tags: comments, avatar, monster, monsterid, gravatar, icon
 Requires at least: 1.5
-Tested up to: 4.0.1
-Stable tag: 3.0
+Tested up to: 6.0.3
+Stable tag: 3.1
 License: GPLv2 or later
 
 Creates a unique, persistent monster avatar for each commenter based on email address. 
@@ -36,7 +36,7 @@ Yes. Just turn on the Gravatar option in the MonsterID options.
 
 Yes, this plugin provides a replacement widget to Recent Comments (since the default widget doesn't provide the commenter's email).
 
-= Why should I use this plugin when Gravatars now has Identicons? = 
+= Why should I use this plugin when Gravatars now has MonsterID? = 
 
 The gravatar monsters are pretty good but if you want artistic monsters or just want one set of avatars for everyone on your site, then this plugin's for you. Otherwise, sure go with gravatars (just set <code>&default=monsterid</code> in the gravatar url).
 
